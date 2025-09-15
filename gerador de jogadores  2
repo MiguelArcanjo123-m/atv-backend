@@ -17,3 +17,28 @@ public class JogadorService {
         return new Jogador(nome, sobrenome, idade, posicao, time);
     }
 }
+/////////////////////
+
+package com.exercicios.springweb.jogador;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class JogadorController {
+
+    private final JogadorService jogadorService;
+
+    public JogadorController(JogadorService jogadorService) {
+        this.jogadorService = jogadorService;
+    }
+
+    @GetMapping("/jogador/{time}/{posicao}")
+    public Jogador gerar(@PathVariable String time, @PathVariable String posicao) {
+        return jogadorService.gerarJogador(capitalize(time), capitalize(posicao));
+    }
+
+    private String capitalize(String str) {
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
