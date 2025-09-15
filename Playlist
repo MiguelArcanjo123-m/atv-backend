@@ -1,0 +1,109 @@
+Playlist.java
+
+package com.exercicios.springweb.playlist;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class Playlist {
+    private int id;
+    private String nome;
+    private List<Musica> musicas = new ArrayList<>();
+
+    public Playlist(int id, String nome) {
+        this.id = id;
+        this.nome = nome;
+    }
+
+    public int getId() { return id; }
+    public String getNome() { return nome; }
+    public List<Musica> getMusicas() { return musicas; }
+
+    public void adicionarMusica(Musica musica) {
+        musicas.add(musica);
+    }
+}
+
+
+Musica.java
+
+package com.exercicios.springweb.playlist;
+
+public class Musica {
+    private int id;
+    private String nome;
+    private String artista;
+    private String album;
+    private int duracao;
+    private String genero;
+
+    public int getId() { return id; }
+    public void setId(int id) { this.id = id; }
+
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+
+    public String getArtista() { return artista; }
+    public void setArtista(String artista) { this.artista = artista; }
+
+    public String getAlbum() { return album; }
+    public void setAlbum(String album) { this.album = album; }
+
+    public int getDuracao() { return duracao; }
+    public void setDuracao(int duracao) { this.duracao = duracao; }
+
+    public String getGenero() { return genero; }
+    public void setGenero(String genero) { this.genero = genero; }
+}
+
+
+PlaylistController.java
+
+package com.exercicios.springweb.playlist;
+
+import org.springframework.web.bind.annotation.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
+@RestController
+@RequestMapping("/playlists")
+public class PlaylistController {
+
+    private final List<Playlist> playlists = new ArrayList<>();
+    private final AtomicInteger idCounter = new AtomicInteger(1);
+
+    @PostMapping
+    public Playlist criarPlaylist(@RequestBody Playlist playlistRequest) {
+        Playlist playlist = new Playlist(idCounter.getAndIncrement(), playlistRequest.getNome());
+        playlists.add(playlist);
+        return playlist;
+    }
+
+    @PostMapping("/{id}/musicas")
+    public String adicionarMusica(@PathVariable int id, @RequestBody Musica musica) {
+        Playlist playlist = playlists.stream()
+                .filter(p -> p.getId() == id)
+                .findFirst()
+                .orElse(null);
+        if (playlist != null) {
+            playlist.adicionarMusica(musica);
+            return "Música adicionada com sucesso!";
+        }
+        return "Playlist não encontrada.";
+    }
+
+    @GetMapping
+    public List<Playlist> listarPlaylists() {
+        return playlists;
+    }
+
+    @GetMapping("/{id}/musicas")
+    public List<Musica> listarMusicas(@PathVariable int id) {
+        Playlist playlist = playlists.stream()
+                .filter(p -> p.getId() == id)
+                .findFirst()
+                .orElse(null);
+        return (playlist != null) ? playlist.getMusicas() : new ArrayList<>();
+    }
+}
