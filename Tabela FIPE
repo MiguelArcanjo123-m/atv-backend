@@ -1,0 +1,122 @@
+
+
+import lombok.Data;
+
+@Data
+public class CarroRequest {
+    private String marca;
+    private String modelo;
+    private int ano;
+}
+
+package com.example.fipe.dto;
+
+import lombok.Data;
+
+@Data
+public class CarroResponse {
+    private double valor;
+    private String mes;
+}
+
+package com.example.fipe.service;
+
+import com.example.fipe.dto.CarroRequest;
+import com.example.fipe.dto.CarroResponse;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import java.util.Map;
+
+@Service
+public class FipeService {
+
+    private final RestClient restClient;
+
+    public FipeService(RestClient.Builder builder) {
+        this.restClient = builder.baseUrl("https://parallelum.com.br/fipe/api/v1").build();
+    }
+
+    public CarroResponse buscarValor(CarroRequest request) {
+        var marcas = restClient.get()
+                .uri("/carros/marcas")
+                .retrieve()
+                .body(Map[].class);
+
+        String marcaId = null;
+        for (Map m : marcas) {
+            if (m.get("nome").toString().equalsIgnoreCase(request.getMarca())) {
+                marcaId = m.get("codigo").toString();
+                break;
+            }
+        }
+        if (marcaId == null) throw new RuntimeException("Marca não encontrada!");
+
+        var modelosResponse = restClient.get()
+                .uri("/carros/marcas/{marcaId}/modelos", marcaId)
+                .retrieve()
+                .body(Map.class);
+
+        var modelos = (Object[]) ((Map) modelosResponse).get("modelos");
+
+        String modeloId = null;
+        for (Object obj : modelos) {
+            Map m = (Map) obj;
+            if (m.get("nome").toString().equalsIgnoreCase(request.getModelo())) {
+                modeloId = m.get("codigo").toString();
+                break;
+            }
+        }
+        if (modeloId == null) throw new RuntimeException("Modelo não encontrado!");
+
+        var anos = restClient.get()
+                .uri("/carros/marcas/{marcaId}/modelos/{modeloId}/anos", marcaId, modeloId)
+                .retrieve()
+                .body(Map[].class);
+
+        String anoId = null;
+        for (Map m : anos) {
+            if (m.get("nome").toString().contains(String.valueOf(request.getAno()))) {
+                anoId = m.get("codigo").toString();
+                break;
+            }
+        }
+        if (anoId == null) throw new RuntimeException("Ano não encontrado!");
+
+        Map resultado = restClient.get()
+                .uri("/carros/marcas/{marcaId}/modelos/{modeloId}/anos/{anoId}", marcaId, modeloId, anoId)
+                .retrieve()
+                .body(Map.class);
+
+        CarroResponse response = new CarroResponse();
+        response.setValor(Double.parseDouble(resultado.get("Valor").toString()
+                .replace("R$", "")
+                .replace(".", "")
+                .replace(",", ".")
+                .trim()));
+        response.setMes(resultado.get("MesReferencia").toString());
+        return response;
+    }
+}
+
+package com.example.fipe.controller;
+
+import com.example.fipe.dto.CarroRequest;
+import com.example.fipe.dto.CarroResponse;
+import com.example.fipe.service.FipeService;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/fipe")
+public class FipeController {
+
+    private final FipeService fipeService;
+
+    public FipeController(FipeService fipeService) {
+        this.fipeService = fipeService;
+    }
+
+    @PostMapping("/consultar")
+    public CarroResponse consultar(@RequestBody CarroRequest request) {
+        return fipeService.buscarValor(request);
+    }
+}
