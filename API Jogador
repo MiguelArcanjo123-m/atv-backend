@@ -1,0 +1,43 @@
+package com.exemplo.jogadores.model;
+
+public class Jogador {
+    private Long id;
+    private String nome;
+    private String posicao;
+    private int idade;
+
+    public Jogador(Long id, String nome, String posicao, int idade) {
+        this.id = id;
+        this.nome = nome;
+        this.posicao = posicao;
+        this.idade = idade;
+    }
+
+    public Long getId() { return id; }
+    public String getNome() { return nome; }
+    public String getPosicao() { return posicao; }
+    public int getIdade() { return idade; }
+}
+
+
+package com.exemplo.jogadores.controller;
+
+import com.exemplo.jogadores.model.Jogador;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Arrays;
+import java.util.List;
+
+@RestController
+@RequestMapping("/jogadores")
+public class JogadorController {
+
+    @GetMapping
+    public List<Jogador> getJogadores() {
+        return Arrays.asList(
+                new Jogador(1L, "Ronaldo", "Atacante", 40),
+                new Jogador(2L, "Cafu", "Lateral", 50),
+                new Jogador(3L, "Kaká", "Meia", 38)
+        );
+    }
+}
